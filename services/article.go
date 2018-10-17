@@ -1,76 +1,47 @@
 package services
 
-import "github.com/khanhoatink4/go-restful-template/models"
+import (
+	"github.com/khanhoatink4/go-restful-template/models"
+)
 
 // artistDAO specifies the interface of the artist DAO needed by ArtistService.
-type artistDAO interface {
-	// Get returns the artist with the specified artist ID.
-	Get(rs app.RequestScope, id int) (*models.Article, error)
-	// Count returns the number of artists.
-	Count(rs app.RequestScope) (int, error)
+type ArtistDAO interface {
+
 	// Query returns the list of artists with the given offset and limit.
-	Query(rs app.RequestScope, offset, limit int) ([]models.Article, error)
+	query(offset, limit int) ([]models.ArticleModel, error)
 	// Create saves a new artist in the storage.
-	Create(rs app.RequestScope, artist *models.Article) error
-	// Update updates the artist with given ID in the storage.
-	Update(rs app.RequestScope, id int, artist *models.Article) error
-	// Delete removes the artist with given ID from the storage.
-	Delete(rs app.RequestScope, id int) error
+	create(artist *models.ArticleModel) error
 }
 
 // ArtistService provides services related with artists.
 type ArtistService struct {
-	dao artistDAO
+	dao ArtistDAO
 }
 
 // NewArtistService creates a new ArtistService with the given artist DAO.
-func NewArtistService(dao artistDAO) *ArtistService {
+func NewArtistService(dao ArtistDAO) *ArtistService {
 	return &ArtistService{dao}
 }
 
-// Get returns the artist with the specified the artist ID.
-func (s *ArtistService) Get(rs app.RequestScope, id int) (*models.Article, error) {
-	return s.dao.Get(rs, id)
-}
-
 // Create creates a new artist.
-func (s *ArtistService) Create(rs app.RequestScope, model *models.Article) (*models.Article, error) {
-	if err := model.Validate(); err != nil {
-		return nil, err
+func Create( model *models.ArticleModel) (*models.ArticleModel, error) {
+	db := models.GetDB()
+	defer db.Close()
+	data := &models.ArticleModel{Title: model.Title, Content: model.Content}
+	err := db.Create(data)
+	if err.Error != nil {
+		return &models.ArticleModel{}, err.Error
 	}
-	if err := s.dao.Create(rs, model); err != nil {
-		return nil, err
-	}
-	return s.dao.Get(rs, model.Id)
+	return data, nil
 }
-
-// Update updates the artist with the specified ID.
-func (s *ArtistService) Update(rs app.RequestScope, id int, model *models.Article) (*models.Article, error) {
-	if err := model.Validate(); err != nil {
-		return nil, err
-	}
-	if err := s.dao.Update(rs, id, model); err != nil {
-		return nil, err
-	}
-	return s.dao.Get(rs, id)
-}
-
-// Delete deletes the artist with the specified ID.
-func (s *ArtistService) Delete(rs app.RequestScope, id int) (*models.Article, error) {
-	artist, err := s.dao.Get(rs, id)
-	if err != nil {
-		return nil, err
-	}
-	err = s.dao.Delete(rs, id)
-	return artist, err
-}
-
-// Count returns the number of artists.
-func (s *ArtistService) Count(rs app.RequestScope) (int, error) {
-	return s.dao.Count(rs)
-}
-
 // Query returns the artists with the specified offset and limit.
-func (s *ArtistService) Query(rs app.RequestScope, offset, limit int) ([]models.Article, error) {
-	return s.dao.Query(rs, offset, limit)
+func Query(offset, limit int) ([]models.ArticleModel, error) {
+	db := models.GetDB()
+	defer db.Close()
+	articleModels := []models.ArticleModel{}
+	err := db.Find(&articleModels)
+	if err.Error != nil {
+		return articleModels, err.Error
+	}
+	return articleModels, nil
 }

@@ -24,13 +24,13 @@ func (ctrl ArticleController) Create(c *gin.Context) {
 	}
 	db := models.GetDB()
 	err := db.Create(&models.ArticleModel{Title: articleForm.Title, Content: articleForm.Content})
-	if err != nil {
+	if err.Error != nil {
 		c.JSON(406, gin.H{"message": "Article could not be created", "error": err})
 		c.Abort()
 		return
 	}
 
-	c.JSON(200, gin.H{"message": "Article created", "id": err.Value})
+	c.JSON(200, gin.H{"message": "Article created", "result": err.Value})
 }
 
 //All ...
@@ -39,5 +39,5 @@ func (ctrl ArticleController) All(c *gin.Context) {
 	articleModels := []models.ArticleModel{}
 	data := db.Find(&articleModels)
 
-	c.JSON(200, gin.H{"data": data.Value})
+	c.JSON(200, gin.H{"result": data.Value})
 }
